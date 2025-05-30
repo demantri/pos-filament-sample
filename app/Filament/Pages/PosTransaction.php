@@ -60,10 +60,14 @@ class PosTransaction extends Page implements HasTable
         $startOfMonth = Carbon::now()->startOfMonth();
 
         // Total transaksi bulan ini
-        $this->monthlyTotal = Transaction::whereBetween('created_at', [$startOfMonth, now()])->count();
+        $this->monthlyTotal = Transaction::where('status', 'completed')
+            ->whereBetween('created_at', [$startOfMonth, now()])
+            ->sum('total');
 
         // Total transaksi hari ini
-        $this->dailyTotal = Transaction::whereDate('created_at', $today)->count();
+        $this->dailyTotal = Transaction::where('status', 'completed')
+            ->whereDate('created_at', $today)
+            ->sum('total');
 
         // Produk best seller (dari transaksi detail)
         $bestSeller = TransactionItem::select('product_id')
