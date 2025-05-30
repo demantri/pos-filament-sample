@@ -2,26 +2,30 @@
 
 namespace App\Filament\Pages;
 
+use Carbon\Carbon;
 use Filament\Tables;
 use App\Models\Product;
 use Filament\Pages\Page;
+use App\Models\Transaction;
+use App\Models\TransactionItem;
+use App\Models\TransactionHistory;
+use Illuminate\Support\Facades\DB;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Notifications\Notification;
-use App\Models\Transaction;
-use App\Models\TransactionItem;
-use Illuminate\Support\Facades\DB;
 
 class PosTransaction extends Page implements HasTable
 {
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
+
     protected static string $view = 'filament.pages.point-of-sales';
+
     protected static ?string $title = 'Point of Sales';
 
     public $cart = [];
@@ -34,12 +38,44 @@ class PosTransaction extends Page implements HasTable
     public $paid_amount = 0;  // Set default ke 0
     public $change = 0;
 
-    protected $listeners = ['updateCart' => 'updateTotals'];
+    public $monthlyTotal = 0;
+    public $dailyTotal = 0;
+    public $bestSeller = '-';
+    public $emptyProducts = 0;
+
+    protected $listeners = [
+        'updateCart' => 'updateTotals'
+    ];
 
     public function mount()
     {
         $this->paid_amount = 0; // Pastikan default value
         $this->updateTotals();
+        $this->loadSummary();
+    }
+
+    public function loadSummary()
+    {
+        $today = Carbon::today();
+        $startOfMonth = Carbon::now()->startOfMonth();
+
+        // Total transaksi bulan ini
+        $this->monthlyTotal = Transaction::whereBetween('created_at', [$startOfMonth, now()])->count();
+
+        // Total transaksi hari ini
+        $this->dailyTotal = Transaction::whereDate('created_at', $today)->count();
+
+        // Produk best seller (dari transaksi detail)
+        $bestSeller = TransactionItem::select('product_id')
+            ->selectRaw('SUM(quantity) as total_sold')
+            ->groupBy('product_id')
+            ->orderByDesc('total_sold')
+            ->first();
+
+        $this->bestSeller = $bestSeller ? Product::find($bestSeller->product_id)?->name ?? '-' : '-';
+
+        // Produk yang habis
+        $this->emptyProducts = Product::where('qty', '<=', 0)->count();
     }
 
     public function getTableQuery(): Builder
@@ -254,6 +290,7 @@ class PosTransaction extends Page implements HasTable
 
     public function submit()
     {
+        // dd(auth()->user()->id);
         // Validasi
         if (empty($this->cart)) {
             Notification::make()
@@ -269,17 +306,19 @@ class PosTransaction extends Page implements HasTable
         
         if ($paidAmount < $this->total) {
             Notification::make()
-                ->title('Error')
+                ->title('Pembayaran Gagal')
                 ->body('Jumlah pembayaran kurang dari total.')
                 ->danger()
                 ->send();
             return;
         }
-
+        // dd($this->total, $this->customer_name, $this->payment_method, $this->change, $this->cart);
         try {
             DB::transaction(function () use ($paidAmount) {
                 $transaction = Transaction::create([
-                    'transaction_number' => 'TRX-' . date('Ymd') . '-' . str_pad(Transaction::whereDate('created_at', today())->count() + 1, 4, '0', STR_PAD_LEFT),
+                    'store_id' => auth()->user()->store_id,
+                    'user_id' => auth()->user()->id,
+                    'transaction_number' => 'TRX-' . date('Ymd') . str_pad(Transaction::whereDate('created_at', today())->count() + 1, 4, '0', STR_PAD_LEFT),
                     'customer_name' => $this->customer_name ?: 'Walk-in Customer',
                     'subtotal' => $this->subtotal,
                     'discount' => is_numeric($this->discount) ? (float) $this->discount : 0,
@@ -303,10 +342,21 @@ class PosTransaction extends Page implements HasTable
 
                     $product = Product::find($item['id']);
                     $product->decrement('qty', $item['qty']);
+
+                    TransactionHistory::create([
+                        'store_id' => auth()->user()->store_id,
+                        'transaction_id' => $transaction->id,
+                        'product_id' => $item['id'],
+                        'first_stok' => $product->qty + $item['qty'],
+                        'last_stok' => $product->qty,
+                        'type' => 'Out',
+                    ]);
                 }
             });
 
             $this->clearCart();
+
+            $this->loadSummary();
             
             Notification::make()
                 ->title('Transaksi Berhasil')
@@ -327,7 +377,7 @@ class PosTransaction extends Page implements HasTable
     {
         return [10, 25, 50, 100];
     }
-    
+
     /**
      * Set pembayaran dengan nominal exact (uang pas)
      */

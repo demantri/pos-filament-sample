@@ -15,10 +15,17 @@ return new class extends Migration
             $table->id();
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // kasir
-            $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('invoice_number')->unique();
-            $table->dateTime('transaction_date');
-            $table->decimal('total', 12, 2);
+            // $table->string('store_id')->unique();
+            $table->string('transaction_number')->unique();
+            $table->string('customer_name')->nullable();
+            $table->decimal('subtotal', 10, 2);
+            $table->decimal('discount', 10, 2)->default(0);
+            $table->decimal('tax', 10, 2)->default(0);
+            $table->decimal('total', 10, 2);
+            $table->string('payment_method');
+            $table->decimal('paid_amount', 10, 2);
+            $table->decimal('change', 10, 2)->default(0);
+            $table->string('status')->default('completed');
             $table->timestamps();
         });
     }
