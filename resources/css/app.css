@@ -1,0 +1,38 @@
+/* Tambahkan ke resources/css/app.css atau file CSS custom Anda */
+
+/* Hover effect untuk gambar produk */
+.filament-tables-image-column img {
+    transition: all 0.2s ease-in-out;
+}
+
+.filament-tables-image-column img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Hover effect untuk nama produk */
+.filament-tables-text-column:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Style untuk produk yang stoknya habis */
+.product-out-of-stock {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Animation untuk notifikasi */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification-enter {
+    animation: slideInRight 0.3s ease-out;
+}
