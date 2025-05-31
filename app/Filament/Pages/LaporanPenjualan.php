@@ -3,13 +3,17 @@
 namespace App\Filament\Pages;
 
 use App\Models\Product;
-use App\Models\Transaction;
 use Filament\Pages\Page;
+use App\Models\Transaction;
+use App\Exports\ProductsExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Filament\Tables\Actions\Action;
+use Maatwebsite\Excel\Facades\Excel;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Database\Eloquent\Collection;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 
 class LaporanPenjualan extends Page implements HasTable
 {
@@ -25,7 +29,8 @@ class LaporanPenjualan extends Page implements HasTable
 
     public function getTableQuery(): Builder
     {
-        return Transaction::query();
+        return Transaction::query()
+            ->where('store_id', auth()->user()->store_id);
     }
 
     public function getTableColumns(): array

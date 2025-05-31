@@ -56,22 +56,28 @@ class PosTransaction extends Page implements HasTable
 
     public function loadSummary()
     {
+        $storeId = auth()->user()->store_id;
+
         $today = Carbon::today();
         $startOfMonth = Carbon::now()->startOfMonth();
 
         // Total transaksi bulan ini
         $this->monthlyTotal = Transaction::where('status', 'completed')
+            ->where('store_id', $storeId)
             ->whereBetween('created_at', [$startOfMonth, now()])
             ->sum('total');
 
         // Total transaksi hari ini
         $this->dailyTotal = Transaction::where('status', 'completed')
+            ->where('store_id', $storeId)
             ->whereDate('created_at', $today)
             ->sum('total');
 
         // Produk best seller (dari transaksi detail)
         $bestSeller = TransactionItem::select('product_id')
             ->selectRaw('SUM(quantity) as total_sold')
+            ->join('transactions', 'transaction_items.transaction_id', '=', 'transactions.id')
+            ->where('transactions.store_id', $storeId) // filter store
             ->groupBy('product_id')
             ->orderByDesc('total_sold')
             ->first();
@@ -79,12 +85,16 @@ class PosTransaction extends Page implements HasTable
         $this->bestSeller = $bestSeller ? Product::find($bestSeller->product_id)?->name ?? '-' : '-';
 
         // Produk yang habis
-        $this->emptyProducts = Product::where('qty', '<=', 0)->count();
+        $this->emptyProducts = Product::where('store_id', $storeId)
+            ->where('qty', '<=', 0)
+            ->count();
     }
 
     public function getTableQuery(): Builder
     {
-        return Product::query()->where('qty', '>', 0);
+        return Product::query()
+            ->where('store_id', auth()->user()->store_id)
+            ->where('qty', '>', 0);
     }
 
     public function getTableColumns(): array
@@ -143,7 +153,7 @@ class PosTransaction extends Page implements HasTable
                 ->title('Stok Habis')
                 ->body('Produk ' . $product->name . ' sudah habis.')
                 ->danger()
-                ->duration(3000)
+                ->duration(5000)
                 ->send();
             return;
         }
@@ -156,7 +166,7 @@ class PosTransaction extends Page implements HasTable
                 ->title('Stok Tidak Cukup')
                 ->body('Stok produk ' . $product->name . ' hanya tersisa ' . $product->qty . ' item.')
                 ->warning()
-                ->duration(3000)
+                ->duration(5000)
                 ->send();
             return;
         }
@@ -353,7 +363,7 @@ class PosTransaction extends Page implements HasTable
                         'product_id' => $item['id'],
                         'first_stok' => $product->qty + $item['qty'],
                         'last_stok' => $product->qty,
-                        'type' => 'Out',
+                        'type' => 'keluar',
                     ]);
                 }
             });
@@ -408,7 +418,7 @@ class PosTransaction extends Page implements HasTable
                 ->title('Nominal Kurang')
                 ->body('Nominal Rp. ' . number_format($amount, 0, ',', '.') . ' kurang dari total pembayaran.')
                 ->warning()
-                ->duration(3000)
+                ->duration(5000)
                 ->send();
             return;
         }
@@ -423,7 +433,7 @@ class PosTransaction extends Page implements HasTable
             ->body('Dibayar: Rp. ' . number_format($amount, 0, ',', '.') . 
                 ($change > 0 ? ' | Kembalian: Rp. ' . number_format($change, 0, ',', '.') : ''))
             ->success()
-            ->duration(3000)
+            ->duration(5000)
             ->send();
     }
 

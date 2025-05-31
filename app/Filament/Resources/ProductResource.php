@@ -48,7 +48,12 @@ class ProductResource extends Resource
                     ->required(),
 
                 Select::make('category_id')
-                    ->relationship('category', 'name')
+                    // ->relationship('category', 'name')
+                    ->relationship(
+                        'category',
+                        'name',
+                        fn ($query) => $query->where('store_id', auth()->user()->store_id)
+                    )
                     ->required(),
                 
                 Textarea::make('description')
