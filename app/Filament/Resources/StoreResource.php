@@ -22,9 +22,9 @@ class StoreResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
-    protected static ?string $navigationLabel = 'Stores';
+    protected static ?string $navigationLabel = 'Toko';
 
-    protected static ?string $navigationGroup = 'Others';
+    protected static ?string $navigationGroup = 'Pengaturan';
 
     public static function canViewAny(): bool
     {

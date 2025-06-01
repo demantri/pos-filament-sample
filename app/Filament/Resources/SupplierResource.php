@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
-use App\Models\Customer;
+use App\Models\Supplier;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
@@ -12,37 +12,53 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
-use App\Filament\Resources\CustomerResource\Pages;
+use App\Filament\Resources\SupplierResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\CustomerResource\RelationManagers;
+use App\Filament\Resources\SupplierResource\RelationManagers;
 use Filament\Tables\Columns\TextColumn;
 
-class CustomerResource extends Resource
+class SupplierResource extends Resource
 {
-    protected static ?string $model = Customer::class;
+    protected static ?string $model = Supplier::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $navigationGroup = 'Master Data';
-    protected static ?string $navigationLabel = 'Pelanggan';
+
+    protected static ?string $navigationLabel = 'Supplier';
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        return auth()->user()->isSuperAdmin()
+            ? $query
+            : $query->where('store_id', auth()->user()->store_id);
+    }
 
     public static function form(Form $form): Form
     {
+        // dd(auth()->user()->store_id);
         return $form
             ->schema([
                 Hidden::make('store_id')
                     ->default(fn () => auth()->user()->store_id),
                     
+                TextInput::make('supplier_code')
+                    ->readOnly()
+                    ->default(fn () => 'S' . date('Ym') . str_pad(Supplier::max('id') + 1, 3, '0', STR_PAD_LEFT))
+                    ->required(),
+
                 TextInput::make('name')
-                    ->minLength(4)
-                    ->maxLength(150)
+                    ->minLength(5)
+                    ->maxLength(100)
                     ->required(),
 
                 TextInput::make('phone_number')
-                    ->numeric()
                     ->minLength(10)
                     ->maxLength(15)
-                    ->required(),
+                    ->required()
+                    ->numeric(),
 
                 Textarea::make('address')
                     ->required(),
@@ -53,9 +69,11 @@ class CustomerResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->label('Nama Lengkap'),
+                TextColumn::make('supplier_code')->label('Kode Supplier')->badge(),
+                TextColumn::make('name')->label('Nama'),
                 TextColumn::make('address')->label('Alamat'),
                 TextColumn::make('phone_number')->label('No. Telp'),
+                TextColumn::make('created_at')->label('Tgl. dibuat'),
             ])
             ->filters([
                 //
@@ -80,9 +98,9 @@ class CustomerResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCustomers::route('/'),
-            'create' => Pages\CreateCustomer::route('/create'),
-            'edit' => Pages\EditCustomer::route('/{record}/edit'),
+            'index' => Pages\ListSuppliers::route('/'),
+            'create' => Pages\CreateSupplier::route('/create'),
+            'edit' => Pages\EditSupplier::route('/{record}/edit'),
         ];
     }
 }

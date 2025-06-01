@@ -26,7 +26,9 @@ class ProductResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
 
-    protected static ?string $navigationGroup = 'Data Master';
+    protected static ?string $navigationGroup = 'Master Data';
+
+    protected static ?string $navigationLabel = 'Produk';
 
     public static function getEloquentQuery(): Builder
     {

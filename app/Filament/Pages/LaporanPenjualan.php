@@ -8,9 +8,11 @@ use App\Models\Transaction;
 use App\Exports\ProductsExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Filters\Filter;
 use Maatwebsite\Excel\Facades\Excel;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -25,7 +27,25 @@ class LaporanPenjualan extends Page implements HasTable
 
     protected static ?string $navigationGroup = 'Laporan';
 
-    protected static ?string $title = 'Penjualan';
+    protected static ?string $title = 'Penjualan Harian';
+
+    public function getTableFilters(): array
+    {
+        return [
+            Filter::make('created_at')
+                ->form([
+                    DatePicker::make('tanggal')
+                        ->label('Pilih Tanggal'),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when($data['tanggal'], fn ($q) =>
+                            $q->whereDate('created_at', $data['tanggal'])
+                        );
+                })
+                ->label('Filter Harian'),
+        ];
+    }
 
     public function getTableQuery(): Builder
     {

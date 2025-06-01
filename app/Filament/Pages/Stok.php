@@ -18,8 +18,12 @@ class Stok extends Page implements HasTable
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
     protected static string $view = 'filament.pages.stok';
+
     protected static ?string $title = 'Manage Stok';
+
+    protected static ?string $navigationGroup = 'Transaksi';
 
     // Form properties
     public $product_id;

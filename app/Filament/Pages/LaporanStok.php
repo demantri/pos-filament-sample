@@ -24,7 +24,7 @@ class LaporanStok extends Page implements HasTable
 
     protected static ?string $navigationGroup = 'Laporan';
 
-    protected static ?string $title = 'Stok Masuk/Keluar';
+    protected static ?string $title = 'Laporan Stok';
 
     public function getTableHeaderActions(): array 
     {
@@ -49,11 +49,14 @@ class LaporanStok extends Page implements HasTable
     {
         $store_id = auth()->user()->store_id;
 
-        $data = TransactionHistory::query()
-            ->where('store_id', $store_id)
-            ->orderBy('id', 'desc');
-
-        return $data;
+        return TransactionHistory::query()
+            ->selectRaw("transaction_histories.*, transaction_items.quantity")
+            ->join('transaction_items', function ($join) {
+                $join->on('transaction_items.transaction_id', '=', 'transaction_histories.transaction_id')
+                    ->on('transaction_items.product_id', '=', 'transaction_histories.product_id');
+            })
+            ->where('transaction_histories.store_id', $store_id)
+            ->orderByDesc('transaction_histories.id');
     }
 
     public function getTableColumns(): array
@@ -65,9 +68,15 @@ class LaporanStok extends Page implements HasTable
             TextColumn::make('type')
                 ->badge()
                 ->color(fn ($record) => $record->type == 'keluar' ? 'warning' : 'success')
-                ->label('Type'),
+                ->label('Tipe'),
 
-            TextColumn::make('first_stok')
+            TextColumn::make('quantity')
+                ->badge()
+                ->color('success')
+                // ->color(fn ($record) => $record->qty < 10 ? 'warning' : ($record->qty <= 0 ? 'danger' : 'success'))
+                ->label('Qty'),
+            
+                TextColumn::make('first_stok')
                 ->badge()
                 ->color('success')
                 // ->color(fn ($record) => $record->qty < 10 ? 'warning' : ($record->qty <= 0 ? 'danger' : 'success'))

@@ -28,6 +28,8 @@ class PosTransaction extends Page implements HasTable
 
     protected static ?string $title = 'Point of Sales';
 
+    protected static ?string $navigationGroup = 'Transaksi';
+
     public $cart = [];
     public $subtotal = 0;
     public $discount = 0;
