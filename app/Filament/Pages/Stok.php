@@ -56,7 +56,7 @@ class Stok extends Page implements HasTable
         ]);
 
         $product = Product::find($this->product_id);
-        $firstStok = $product->qty;
+        $firstStok = is_null($product->qty) == 0;
 
         if ($this->tipe === 'masuk') {
             $lastStok = $firstStok + $this->jumlah;

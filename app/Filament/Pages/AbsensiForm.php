@@ -16,6 +16,7 @@ class AbsensiForm extends Page implements HasForms
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.absensi-form';
     protected static ?string $title = 'Absensi Karyawan';
+    protected static bool $shouldRegisterNavigation = false;
 
     // public ?array $data = [];
 
@@ -23,6 +24,11 @@ class AbsensiForm extends Page implements HasForms
     public $latitude;
     public $longitude;
     public $selfie_path;
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isSuperAdmin();
+    }
 
     // public function getFormModel(): mixed
     // {
