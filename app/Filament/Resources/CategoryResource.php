@@ -7,7 +7,9 @@ use Filament\Tables;
 use App\Models\Category;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rule;
 use Filament\Resources\Resource;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
@@ -15,7 +17,6 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\CategoryResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\CategoryResource\RelationManagers;
-use Filament\Forms\Components\Hidden;
 
 class CategoryResource extends Resource
 {
@@ -43,11 +44,17 @@ class CategoryResource extends Resource
                 TextInput::make('name')
                     ->maxLength(50)
                     ->minLength(4)
-                    ->unique(ignoreRecord: true)
+                    // ->unique(ignoreRecord: true)
+                    ->rules([
+                        Rule::unique('categories', 'name')
+                            ->where(fn ($query) => $query->where('store_id', auth()->user()->store_id))
+                            ->ignore(fn ($record) => $record?->id),
+                    ])
                     ->required(),
                     
                 Hidden::make('store_id')
-                    ->default(fn () => auth()->user()->store_id),
+                    ->default(fn () => auth()->user()->store_id)
+                    ->required(),
             ]);
     }
 
