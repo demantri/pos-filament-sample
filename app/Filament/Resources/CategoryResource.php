@@ -51,7 +51,7 @@ class CategoryResource extends Resource
                             ->ignore(fn ($record) => $record?->id),
                     ])
                     ->required(),
-                    // test
+                    
                 Hidden::make('store_id')
                     ->default(fn () => auth()->user()->store_id)
                     ->required(),
